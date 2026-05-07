@@ -1,6 +1,6 @@
 import SwiftUI
 
-// Goal struct, Identifiable lets SwuiftUI use it inside ForEach.
+// Goal struct, Identifiable lets SwiftUI use it inside ForEach.
 // Save/load with Codable through JSON.
 struct Goal: Identifiable, Codable
 {
@@ -19,6 +19,15 @@ struct Goal: Identifiable, Codable
     }
 }
 
+// Represents one badge in the app.
+struct Badge: Identifiable
+{
+    let id = UUID()
+    var title: String
+    var description: String
+    var icon: String
+}
+
 // Main home screen.
 struct ContentView: View
 {
@@ -28,7 +37,7 @@ struct ContentView: View
     @AppStorage("lastOpenedDate") private var lastOpenedDate = ""
     @AppStorage("lastCheckInDate") private var lastCheckInDate = ""
     
-    // Temp list of goals when starting app, LoadGoals() will replace.
+    // Temp list of goals when starting app, loadGoals() will replace.
     @State private var goals: [Goal] = [
         Goal(title: "Study Coding"),
         Goal(title: "Gym"),
@@ -40,6 +49,12 @@ struct ContentView: View
     
     // Stores text from user when creating new goal.
     @State private var newGoalText = ""
+    
+    // Stores most recent earned badge.
+    @State private var recentBadge: Badge? = nil
+
+    // Stores all earned badges.
+    @State private var earnedBadges: [Badge] = []
     
     // Calculates user's current level based on total XP.
     var currentLevel: Int
@@ -154,6 +169,39 @@ struct ContentView: View
                     .background(Color.ascendraCard)
                     .cornerRadius(20)
                     
+                    // Shows the user's most recently earned badge.
+                    if let badge = recentBadge
+                    {
+                        VStack(alignment: .leading, spacing: 12)
+                        {
+                            HStack(spacing: 14)
+                            {
+                                Image(systemName: badge.icon)
+                                    .font(.largeTitle)
+                                    .foregroundColor(.ascendraOrange)
+                                
+                                VStack(alignment: .leading, spacing: 4)
+                                {
+                                    Text("New Badge Earned")
+                                        .font(.caption)
+                                        .foregroundColor(.secondaryText)
+                                    
+                                    Text(badge.title)
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                    
+                                    Text(badge.description)
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondaryText)
+                                }
+                            }
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.ascendraCard)
+                        .cornerRadius(20)
+                    }
+                    
                     // Goals section.
                     VStack(alignment: .leading, spacing: 12)
                     {
@@ -182,7 +230,7 @@ struct ContentView: View
                         // $ symbol passes binding so GoalRow can edit goal.
                         ForEach($goals)
                         { $goal in
-                            GoalRow(goal: $goal, onCheckIn:handleGoalCheckIn, saveGoals: saveGoals)
+                            GoalRow(goal: $goal, onCheckIn: handleGoalCheckIn, saveGoals: saveGoals)
                         }
                     }
                     
@@ -273,6 +321,7 @@ struct ContentView: View
     {
         xp += 10
         updateStreak()
+        checkForBadges()
     }
 
     func updateStreak()
@@ -338,6 +387,60 @@ struct ContentView: View
         
         return calendar.isDate(savedDate, inSameDayAs: yesterday)
     }
+    
+    // Checks if user has earned any new badges.
+    func checkForBadges()
+    {
+        if xp >= 10 && !hasBadge(named: "First Check-In")
+        {
+            unlockBadge(
+                title: "First Check-In",
+                description: "Completed your first goal.",
+                icon: "star.fill"
+            )
+        }
+        
+        if xp >= 100 && !hasBadge(named: "100 XP")
+        {
+            unlockBadge(
+                title: "100 XP",
+                description: "Reached 100 total XP.",
+                icon: "bolt.fill"
+            )
+        }
+        
+        if streak >= 3 && !hasBadge(named: "3-Day Streak")
+        {
+            unlockBadge(
+                title: "3-Day Streak",
+                description: "Stayed consistent for 3 days.",
+                icon: "flame.fill"
+            )
+        }
+    }
+
+    // Creates and stores newly earned badge.
+    func unlockBadge(title: String, description: String, icon: String)
+    {
+        let newBadge = Badge(
+            title: title,
+            description: description,
+            icon: icon
+        )
+        
+        earnedBadges.append(newBadge)
+        recentBadge = newBadge
+    }
+
+    // Checks whether user already owns a badge.
+    func hasBadge(named title: String) -> Bool
+    {
+        return earnedBadges.contains
+        {
+            $0.title == title
+        }
+    }
+    
 }
 
 // Sheet that lets the user create a new goal.
@@ -405,7 +508,7 @@ struct AddGoalSheet: View
 // One row in the goals list.
 struct GoalRow: View
 {
-    // Binding lets hits row edit the actual goal from ContentView
+    // Binding lets this row edit the actual goal from ContentView
     @Binding var goal: Goal
     
     var onCheckIn: () -> Void
@@ -532,7 +635,7 @@ struct FeedRow: View
                         .foregroundColor(.white)
                 )
             
-            // Feed message and optinoal note.
+            // Feed message and optional note.
             VStack(alignment: .leading, spacing: 4)
             {
                 Text("\(name) \(action) \(goal)")

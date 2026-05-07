@@ -20,12 +20,21 @@ struct Goal: Identifiable, Codable
 }
 
 // Represents one badge in the app.
-struct Badge: Identifiable
+struct Badge: Identifiable, Codable
 {
-    let id = UUID()
+    let id: UUID
     var title: String
     var description: String
     var icon: String
+    
+    init(id: UUID = UUID(), title: String, description: String, icon: String)
+
+    {
+        self.id = id
+        self.title = title
+        self.description = description
+        self.icon = icon
+    }
 }
 
 // Main home screen.
@@ -263,6 +272,7 @@ struct ContentView: View
         .onAppear
         {
             loadGoals()
+            loadBadges()
             resetGoalsIfNewDay()
             checkForMissedStreak()
         }
@@ -290,6 +300,26 @@ struct ContentView: View
            let decoded = try? JSONDecoder().decode([Goal].self, from: data)
         {
             goals = decoded
+        }
+    }
+    
+    // Saves earned badges to UserDefaults as JSON data.
+    func saveBadges()
+    {
+        if let encoded = try? JSONEncoder().encode(earnedBadges)
+        {
+            UserDefaults.standard.set(encoded, forKey: "earnedBadges")
+        }
+    }
+
+    // Loads earned badges from UserDefaults.
+    func loadBadges()
+    {
+        if let data = UserDefaults.standard.data(forKey: "earnedBadges"),
+           let decoded = try? JSONDecoder().decode([Badge].self, from: data)
+        {
+            earnedBadges = decoded
+            recentBadge = earnedBadges.last
         }
     }
     
@@ -430,6 +460,7 @@ struct ContentView: View
         
         earnedBadges.append(newBadge)
         recentBadge = newBadge
+        saveBadges()
     }
 
     // Checks whether user already owns a badge.

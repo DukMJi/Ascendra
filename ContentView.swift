@@ -1,11 +1,16 @@
 import SwiftUI
 
+// Goal struct, Identifiable lets SwuiftUI use it inside ForEach.
+// Save/load with Codable through JSON.
 struct Goal: Identifiable, Codable
 {
     let id: UUID
     var title: String
     var isCheckedIn: Bool
     
+    // Creates new goal.
+    // If no id given, automatically create new UUID.
+    // New goals start unchecked by default.
     init(id: UUID = UUID(), title: String, isCheckedIn: Bool = false)
     {
         self.id = id
@@ -14,25 +19,32 @@ struct Goal: Identifiable, Codable
     }
 }
 
+// Main home screen.
 struct ContentView: View
 {
+    // AppStorage saves simple values even after the app closes.
     @AppStorage("xp") private var xp = 120
     @AppStorage("streak") private var streak = 5
     @AppStorage("lastOpenedDate") private var lastOpenedDate = ""
     
+    // Temp list of goals when starting app, LoadGoals() will replace.
     @State private var goals: [Goal] = [
         Goal(title: "Study Coding"),
         Goal(title: "Gym"),
         Goal(title: "Read")
     ]
     
+    // Controls whether the add-goal sheet is open.
     @State private var showAddGoal = false
+    
+    // Stores text from user when creating new goal.
     @State private var newGoalText = ""
     
     var body: some View
     {
         ZStack
         {
+            // Main app background.
             Color.ascendraBackground
                 .ignoresSafeArea()
             
@@ -40,6 +52,7 @@ struct ContentView: View
             {
                 VStack(alignment: .leading, spacing: 24)
                 {
+                    // Header section with app name, streak, and XP.
                     HStack
                     {
                         Text("Ascendra")
@@ -53,6 +66,7 @@ struct ContentView: View
                         StatCard(icon: "bolt.fill", value: "\(xp)", label: "XP")
                     }
                     
+                    // Daily quote card.
                     VStack(alignment: .leading, spacing: 12)
                     {
                         Text("Daily Thought")
@@ -73,6 +87,7 @@ struct ContentView: View
                     .background(Color.ascendraCard)
                     .cornerRadius(20)
                     
+                    // Goals section.
                     VStack(alignment: .leading, spacing: 12)
                     {
                         HStack
@@ -84,6 +99,7 @@ struct ContentView: View
                             
                             Spacer()
                             
+                            // Opens the sheet where the user can add new goals.
                             Button
                             {
                                 showAddGoal = true
@@ -95,12 +111,15 @@ struct ContentView: View
                             }
                         }
                         
+                        // Creates one GoalRow for every goal in the goals array.
+                        // $ symbol passes binding so GoalRow can edit goal.
                         ForEach($goals)
                         { $goal in
                             GoalRow(goal: $goal, xp: $xp, saveGoals: saveGoals)
                         }
                     }
                     
+                    // Preview of friend activity w/ temp data.
                     VStack(alignment: .leading, spacing: 12)
                     {
                         HStack
@@ -125,17 +144,20 @@ struct ContentView: View
                 .padding()
             }
         }
+        // Runs when screen first appears.
         .onAppear
         {
             loadGoals()
             resetGoalsIfNewDay()
         }
+        // Shows the add-goal sheet.
         .sheet(isPresented: $showAddGoal)
         {
             AddGoalSheet(newGoalText: $newGoalText, goals: $goals, saveGoals: saveGoals)
         }
     }
     
+    // Saves the goals array to UserDefaults as JSON data.
     func saveGoals()
     {
         if let encoded = try? JSONEncoder().encode(goals)
@@ -144,6 +166,8 @@ struct ContentView: View
         }
     }
     
+    // Loads data goals from UserDefaults.
+    // If no saved goals exist, starter goals stay on screen.
     func loadGoals()
     {
         if let data = UserDefaults.standard.data(forKey: "goals"),
@@ -153,6 +177,8 @@ struct ContentView: View
         }
     }
     
+    // Checks whether the app is being opened on a new day.
+    // If new day, all goals are unchecked.
     func resetGoalsIfNewDay()
     {
         let today = DateFormatter.shortDate.string(from: Date())
@@ -176,12 +202,16 @@ struct ContentView: View
     }
 }
 
+// Sheet that lets the user create a new goal.
 struct AddGoalSheet: View
 {
     @Binding var newGoalText: String
     @Binding var goals: [Goal]
+    
+    // Function passed in from ContentView so this sheet can save goals.
     var saveGoals: () -> Void
     
+    // Allows this sheet to close itself.
     @Environment(\.dismiss) var dismiss
     
     var body: some View
@@ -204,6 +234,7 @@ struct AddGoalSheet: View
                     .foregroundColor(.white)
                     .cornerRadius(14)
                 
+                // Adds the goal if the text is not empty.
                 Button
                 {
                     let trimmedGoal = newGoalText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -233,19 +264,26 @@ struct AddGoalSheet: View
     }
 }
 
+// One row in the goals list.
 struct GoalRow: View
 {
+    // Binding lets hits row edit the actual goal from ContentView
     @Binding var goal: Goal
+    
+    // Binding lets this row increase XP in ContentView.
     @Binding var xp: Int
     
+    // Function used to save the updated check state.
     var saveGoals: () -> Void
     
+    // Controls the temporary +10 XP animation.
     @State private var showXP = false
     
     var body: some View
     {
         HStack(spacing: 14)
         {
+            // Goal icon box.
             ZStack
             {
                 RoundedRectangle(cornerRadius: 14)
@@ -257,6 +295,7 @@ struct GoalRow: View
                     .font(.title2)
             }
             
+            // Goal title and frequency label.
             VStack(alignment: .leading, spacing: 4)
             {
                 Text(goal.title)
@@ -272,6 +311,7 @@ struct GoalRow: View
             
             ZStack
             {
+                // Shows briefly after a goal is checked.
                 if showXP
                 {
                     Text("+10 XP")
@@ -282,8 +322,10 @@ struct GoalRow: View
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 }
                 
+                // Check-in button.
                 Button
                 {
+                    // Only allows XP once per day for this goal.
                     if !goal.isCheckedIn
                     {
                         withAnimation(.spring(response: 0.25, dampingFraction: 0.6))
@@ -295,6 +337,7 @@ struct GoalRow: View
                         
                         saveGoals()
                         
+                        // Hides the +10 XP text after delay.
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8)
                         {
                             withAnimation(.easeOut(duration: 0.3))
@@ -331,6 +374,7 @@ struct GoalRow: View
     }
 }
 
+// One row in the feed preview.
 struct FeedRow: View
 {
     var name: String
@@ -343,6 +387,7 @@ struct FeedRow: View
     {
         HStack(spacing: 14)
         {
+            // Simple profile circle with the user's first initial.
             Circle()
                 .fill(Color.white.opacity(0.12))
                 .frame(width: 48, height: 48)
@@ -352,6 +397,7 @@ struct FeedRow: View
                         .foregroundColor(.white)
                 )
             
+            // Feed message and optinoal note.
             VStack(alignment: .leading, spacing: 4)
             {
                 Text("\(name) \(action) \(goal)")
@@ -367,6 +413,7 @@ struct FeedRow: View
             
             Spacer()
             
+            // Shows success or missed status.
             Image(systemName: success ? "checkmark.circle.fill" : "xmark.circle.fill")
                 .foregroundColor(success ? .ascendraOrange : .gray)
                 .font(.title2)
@@ -377,6 +424,7 @@ struct FeedRow: View
     }
 }
 
+// Small card used for XP and streak in header.
 struct StatCard: View
 {
     var icon: String
@@ -404,6 +452,7 @@ struct StatCard: View
     }
 }
 
+// Custom App theme colors.
 extension Color
 {
     static let ascendraBackground = Color(red: 15/255, green: 17/255, blue: 21/255)
@@ -412,6 +461,7 @@ extension Color
     static let secondaryText = Color(red: 154/255, green: 164/255, blue: 178/255)
 }
 
+// Shared date formatter used for checking whether a new day has started.
 extension DateFormatter
 {
     static let shortDate: DateFormatter =

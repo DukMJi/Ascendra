@@ -26,6 +26,7 @@ struct ContentView: View
     @AppStorage("xp") private var xp = 120
     @AppStorage("streak") private var streak = 5
     @AppStorage("lastOpenedDate") private var lastOpenedDate = ""
+    @AppStorage("lastCheckInDate") private var lastCheckInDate = ""
     
     // Temp list of goals when starting app, LoadGoals() will replace.
     @State private var goals: [Goal] = [
@@ -39,6 +40,30 @@ struct ContentView: View
     
     // Stores text from user when creating new goal.
     @State private var newGoalText = ""
+    
+    // Calculates user's current level based on total XP.
+    var currentLevel: Int
+    {
+        return (xp / 100) + 1
+    }
+
+    // Calculates how much XP user has earned inside current level.
+    var currentLevelXP: Int
+    {
+        return xp % 100
+    }
+
+    // Calculates XP needed to reach the next level.
+    var xpNeededForNextLevel: Int
+    {
+        return 100
+    }
+
+    // Converts current level XP into a progress value between 0.0 and 1.0.
+    var levelProgress: Double
+    {
+        return Double(currentLevelXP) / Double(xpNeededForNextLevel)
+    }
     
     var body: some View
     {
@@ -87,6 +112,48 @@ struct ContentView: View
                     .background(Color.ascendraCard)
                     .cornerRadius(20)
                     
+                    // Level progress card.
+                    VStack(alignment: .leading, spacing: 12)
+                    {
+                        HStack
+                        {
+                            Text("Level \(currentLevel)")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                            
+                            Spacer()
+                            
+                            Text("\(currentLevelXP) / \(xpNeededForNextLevel) XP")
+                                .font(.subheadline)
+                                .foregroundColor(.secondaryText)
+                        }
+                        
+                        // Visual progress bar for current level.
+                        GeometryReader
+                        { geometry in
+                            ZStack(alignment: .leading)
+                            {
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.white.opacity(0.10))
+                                    .frame(height: 12)
+                                
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.ascendraOrange)
+                                    .frame(width: geometry.size.width * levelProgress, height: 12)
+                            }
+                        }
+                        .frame(height: 12)
+                        
+                        Text("Keep checking in to unlock more rewards.")
+                            .font(.caption)
+                            .foregroundColor(.secondaryText)
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.ascendraCard)
+                    .cornerRadius(20)
+                    
                     // Goals section.
                     VStack(alignment: .leading, spacing: 12)
                     {
@@ -115,7 +182,7 @@ struct ContentView: View
                         // $ symbol passes binding so GoalRow can edit goal.
                         ForEach($goals)
                         { $goal in
-                            GoalRow(goal: $goal, xp: $xp, saveGoals: saveGoals)
+                            GoalRow(goal: $goal, onCheckIn:handleGoalCheckIn, saveGoals: saveGoals)
                         }
                     }
                     
@@ -149,6 +216,7 @@ struct ContentView: View
         {
             loadGoals()
             resetGoalsIfNewDay()
+            checkForMissedStreak()
         }
         // Shows the add-goal sheet.
         .sheet(isPresented: $showAddGoal)
@@ -199,6 +267,76 @@ struct ContentView: View
             lastOpenedDate = today
             saveGoals()
         }
+    }
+    
+    func handleGoalCheckIn()
+    {
+        xp += 10
+        updateStreak()
+    }
+
+    func updateStreak()
+    {
+        let today = DateFormatter.shortDate.string(from: Date())
+        
+        if lastCheckInDate == today
+        {
+            return
+        }
+        
+        if lastCheckInDate.isEmpty
+        {
+            streak = 1
+        }
+        else if isYesterday(lastCheckInDate)
+        {
+            streak += 1
+        }
+        else
+        {
+            streak = 1
+        }
+        
+        lastCheckInDate = today
+    }
+
+    func checkForMissedStreak()
+    {
+        if lastCheckInDate.isEmpty
+        {
+            return
+        }
+        
+        let today = DateFormatter.shortDate.string(from: Date())
+        
+        if lastCheckInDate == today
+        {
+            return
+        }
+        
+        if !isYesterday(lastCheckInDate)
+        {
+            streak = 0
+        }
+    }
+
+    func isYesterday(_ dateString: String) -> Bool
+    {
+        guard let savedDate = DateFormatter.shortDate.date(from: dateString)
+        else
+        {
+            return false
+        }
+        
+        let calendar = Calendar.current
+        
+        guard let yesterday = calendar.date(byAdding: .day, value: -1, to: Date())
+        else
+        {
+            return false
+        }
+        
+        return calendar.isDate(savedDate, inSameDayAs: yesterday)
     }
 }
 
@@ -270,10 +408,7 @@ struct GoalRow: View
     // Binding lets hits row edit the actual goal from ContentView
     @Binding var goal: Goal
     
-    // Binding lets this row increase XP in ContentView.
-    @Binding var xp: Int
-    
-    // Function used to save the updated check state.
+    var onCheckIn: () -> Void
     var saveGoals: () -> Void
     
     // Controls the temporary +10 XP animation.
@@ -331,7 +466,7 @@ struct GoalRow: View
                         withAnimation(.spring(response: 0.25, dampingFraction: 0.6))
                         {
                             goal.isCheckedIn = true
-                            xp += 10
+                            onCheckIn()
                             showXP = true
                         }
                         

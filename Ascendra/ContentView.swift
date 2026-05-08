@@ -8,6 +8,7 @@ struct ContentView: View
     @AppStorage("streak") private var streak = 5
     @AppStorage("lastOpenedDate") private var lastOpenedDate = ""
     @AppStorage("lastCheckInDate") private var lastCheckInDate = ""
+    @AppStorage("selectedTheme") private var selectedTheme = AppTheme.core.rawValue
     
     // Temp list of goals when starting app, loadGoals() will replace.
     @State private var goals: [Goal] = [
@@ -52,12 +53,42 @@ struct ContentView: View
         return Double(currentLevelXP) / Double(xpNeededForNextLevel)
     }
     
+    // Converts saved theme string into AppTheme.
+    var currentTheme: AppTheme
+    {
+        return AppTheme(rawValue: selectedTheme) ?? .core
+    }
+
+    // Current theme background color.
+    var themeBackground: Color
+    {
+        return ThemeManager.background(for: currentTheme)
+    }
+
+    // Current theme card color.
+    var themeCard: Color
+    {
+        return ThemeManager.card(for: currentTheme)
+    }
+
+    // Current theme accent color.
+    var themeAccent: Color
+    {
+        return ThemeManager.accent(for: currentTheme)
+    }
+
+    // Current theme secondary text color.
+    var themeSecondaryText: Color
+    {
+        return ThemeManager.secondaryText(for: currentTheme)
+    }
+    
     var body: some View
     {
         ZStack
         {
             // Main app background.
-            Color.ascendraBackground
+            themeBackground
                 .ignoresSafeArea()
             
             ScrollView
@@ -83,7 +114,7 @@ struct ContentView: View
                     {
                         Text("Daily Thought")
                             .font(.caption)
-                            .foregroundColor(.secondaryText)
+                            .foregroundColor(themeSecondaryText)
                         
                         Text("“The secret of getting ahead is getting started.”")
                             .font(.title3)
@@ -92,11 +123,11 @@ struct ContentView: View
                         
                         Text("— Mark Twain")
                             .font(.subheadline)
-                            .foregroundColor(.secondaryText)
+                            .foregroundColor(themeSecondaryText)
                     }
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.ascendraCard)
+                    .background(themeCard)
                     .cornerRadius(20)
                     
                     // Level progress card.
@@ -113,7 +144,7 @@ struct ContentView: View
                             
                             Text("\(currentLevelXP) / \(xpNeededForNextLevel) XP")
                                 .font(.subheadline)
-                                .foregroundColor(.secondaryText)
+                                .foregroundColor(themeSecondaryText)
                         }
                         
                         // Visual progress bar for current level.
@@ -126,7 +157,7 @@ struct ContentView: View
                                     .frame(height: 12)
                                 
                                 RoundedRectangle(cornerRadius: 10)
-                                    .fill(Color.ascendraOrange)
+                                    .fill(themeAccent)
                                     .frame(width: geometry.size.width * levelProgress, height: 12)
                             }
                         }
@@ -134,11 +165,11 @@ struct ContentView: View
                         
                         Text("Keep checking in to unlock more rewards.")
                             .font(.caption)
-                            .foregroundColor(.secondaryText)
+                            .foregroundColor(themeSecondaryText)
                     }
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.ascendraCard)
+                    .background(themeCard)
                     .cornerRadius(20)
                     
                     // Shows the user's most recently earned badge.
@@ -150,13 +181,13 @@ struct ContentView: View
                             {
                                 Image(systemName: badge.icon)
                                     .font(.largeTitle)
-                                    .foregroundColor(.ascendraOrange)
+                                    .foregroundColor(themeAccent)
                                 
                                 VStack(alignment: .leading, spacing: 4)
                                 {
                                     Text("New Badge Earned")
                                         .font(.caption)
-                                        .foregroundColor(.secondaryText)
+                                        .foregroundColor(themeSecondaryText)
                                     
                                     Text(badge.title)
                                         .font(.headline)
@@ -164,13 +195,13 @@ struct ContentView: View
                                     
                                     Text(badge.description)
                                         .font(.subheadline)
-                                        .foregroundColor(.secondaryText)
+                                        .foregroundColor(themeSecondaryText)
                                 }
                             }
                         }
                         .padding()
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.ascendraCard)
+                        .background(themeCard)
                         .cornerRadius(20)
                     }
                     
@@ -193,7 +224,7 @@ struct ContentView: View
                             } label:
                             {
                                 Image(systemName: "plus.circle.fill")
-                                    .foregroundColor(.ascendraOrange)
+                                    .foregroundColor(Color.ascendraCard)
                                     .font(.title2)
                             }
                         }
@@ -219,7 +250,7 @@ struct ContentView: View
                             Spacer()
                             
                             Text("View Full Feed")
-                                .foregroundColor(.ascendraOrange)
+                                .foregroundColor(themeAccent)
                         }
                         
                         FeedRow(name: "John", action: "checked in on", goal: "Gym", note: "Leg day done", success: true)

@@ -4,6 +4,7 @@ struct ProfileScreen: View
 {
     @AppStorage("xp") private var xp = 120
     @AppStorage("streak") private var streak = 5
+    @AppStorage("selectedTheme") private var selectedTheme = AppTheme.core.rawValue
     
     var currentLevel: Int
     {
@@ -53,7 +54,26 @@ struct ProfileScreen: View
                 {
                     ProfileStatRow(title: "Total XP", value: "\(xp)", icon: "bolt.fill")
                     ProfileStatRow(title: "Current Streak", value: "\(streak)", icon: "flame.fill")
-                    ProfileStatRow(title: "Current Theme", value: "Core", icon: "paintpalette.fill")
+                    
+                    VStack(alignment: .leading, spacing: 12)
+                    {
+                        Text("Theme")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                        
+                        Picker("Theme", selection: $selectedTheme)
+                        {
+                            ForEach(AppTheme.allCases, id: \.self)
+                            { theme in
+                                Text(theme.rawValue)
+                                    .tag(theme.rawValue)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                    .padding()
+                    .background(Color.ascendraCard)
+                    .cornerRadius(16)
                 }
                 
                 Spacer()

@@ -3,6 +3,8 @@ import SwiftUI
 // Main tab container for the app.
 struct MainTabView: View
 {
+    @AppStorage("selectedTheme") private var selectedTheme = AppTheme.core.rawValue
+    
     var body: some View
     {
         TabView
@@ -35,6 +37,25 @@ struct MainTabView: View
                     Text("Profile")
                 }
         }
-        .accentColor(.ascendraOrange)
+        .accentColor(currentAccent)
+        .toolbarBackground(currentBackground, for: .tabBar)
+        .toolbarBackground(.visible, for: .tabBar)
+        .toolbarColorScheme(.dark, for: .tabBar)
+        .preferredColorScheme(.dark)
+    }
+    
+    var currentTheme: AppTheme
+    {
+        return AppTheme(rawValue: selectedTheme) ?? .core
+    }
+    
+    var currentBackground: Color
+    {
+        return ThemeManager.background(for: currentTheme)
+    }
+    
+    var currentAccent: Color
+    {
+        return ThemeManager.accent(for: currentTheme)
     }
 }

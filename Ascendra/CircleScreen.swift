@@ -3,15 +3,42 @@ import SwiftUI
 struct CircleScreen: View
 {
     @AppStorage("selectedTheme") private var selectedTheme = AppTheme.core.rawValue
+    @AppStorage("displayName") private var displayName = "Tommy"
+    @AppStorage("profileInitial") private var profileInitial = "T"
     
     // Temporary local data.
     // Later this would come from a backend/database.
-    let members: [CircleMember] = [
-        CircleMember(name: "Sarah", completedGoalsThisWeek: 18, streak: 6),
-        CircleMember(name: "John", completedGoalsThisWeek: 14, streak: 4),
-        CircleMember(name: "Ari", completedGoalsThisWeek: 9, streak: 2),
-        CircleMember(name: "Tommy", completedGoalsThisWeek: 7, streak: 3)
-    ]
+    // Temporary local data.
+    // Later this would come from a backend/database.
+    var members: [CircleMember]
+    {
+        return [
+            CircleMember(
+                name: "Sarah",
+                initial: "S",
+                completedGoalsThisWeek: 18,
+                streak: 6
+            ),
+            CircleMember(
+                name: "John",
+                initial: "J",
+                completedGoalsThisWeek: 18,
+                streak: 6
+            ),
+            CircleMember(
+                name: "Ari",
+                initial: "A",
+                completedGoalsThisWeek: 18,
+                streak: 6
+            ),
+            CircleMember(
+                name: displayName,
+                initial: profileInitial,
+                completedGoalsThisWeek: 7,
+                streak: 3
+            )
+        ]
+    }
     
     // Sort members by completed goals descending.
     var sortedMembers: [CircleMember]
@@ -189,6 +216,7 @@ struct CircleMember: Identifiable
 {
     let id = UUID()
     let name: String
+    let initial: String
     let completedGoalsThisWeek: Int
     let streak: Int
 }
@@ -225,7 +253,8 @@ struct CircleMemberRow: View
                 .fill(themeAccent.opacity(0.18))
                 .frame(width: 40, height: 40)
                 .overlay(
-                    Text(String(member.name.prefix(1)))
+                    Text(member.initial)
+                        .font(.caption)
                         .fontWeight(.bold)
                         .foregroundColor(themeAccent)
                 )

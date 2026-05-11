@@ -5,6 +5,9 @@ struct ProfileScreen: View
     @AppStorage("xp") private var xp = 120
     @AppStorage("streak") private var streak = 5
     @AppStorage("selectedTheme") private var selectedTheme = AppTheme.core.rawValue
+    @AppStorage("displayName") private var displayName = "Tommy"
+    @AppStorage("profileInitial") private var profileInitial = "T"
+    @State private var showEditProfile = false
     
     let themeColumns = [
         GridItem(.flexible()),
@@ -63,19 +66,29 @@ struct ProfileScreen: View
                             .fill(themeAccent.opacity(0.20))
                             .frame(width: 90, height: 90)
                             .overlay(
-                                Text("T")
+                                Text(profileInitial)
                                     .font(.largeTitle)
                                     .fontWeight(.bold)
                                     .foregroundColor(themeAccent)
                             )
                         
-                        Text("Tommy")
+                        Text(displayName)
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundColor(.white)
                         
                         Text("Level \(currentLevel)")
                             .foregroundColor(themeSecondaryText)
+                        
+                        Button
+                        {
+                            showEditProfile = true
+                        } label:
+                        {
+                            Text("Edit Profile")
+                                .font(.caption)
+                                .foregroundColor(themeAccent)
+                        }
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -113,6 +126,14 @@ struct ProfileScreen: View
                     Spacer()
                 }
                 .padding()
+                
+                .sheet(isPresented: $showEditProfile)
+                {
+                    EditProfileSheet(
+                        displayName: $displayName,
+                        profileInitial: $profileInitial
+                    )
+                }
             }
         }
     }

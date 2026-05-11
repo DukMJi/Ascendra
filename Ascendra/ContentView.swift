@@ -182,7 +182,14 @@ struct ContentView: View
                         // $ symbol passes binding so GoalRow can edit goal.
                         ForEach($goals)
                         { $goal in
-                            GoalRow(goal: $goal, onCheckIn: handleGoalCheckIn, saveGoals: saveGoals)
+                            GoalRow(
+                                goal: $goal,
+                                onCheckIn: handleGoalCheckIn,
+                                saveGoals: saveGoals,
+                                onDelete: {
+                                    deleteGoal(goal)
+                                }
+                            )
                         }
                     }
                     
@@ -233,6 +240,16 @@ struct ContentView: View
         {
             UserDefaults.standard.set(encoded, forKey: "goals")
         }
+    }
+    
+    func deleteGoal(_ goal: Goal)
+    {
+        goals.removeAll
+        {
+            $0.id == goal.id
+        }
+        
+        saveGoals()
     }
     
     // Loads data goals from UserDefaults.

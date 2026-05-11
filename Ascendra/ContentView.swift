@@ -423,6 +423,26 @@ struct AddGoalSheet: View
     @Binding var newGoalText: String
     @Binding var goals: [Goal]
     
+    @State private var selectedIcon = "target"
+
+    let goalIcons = [
+        "target",
+        "book.fill",
+        "dumbbell.fill",
+        "heart.fill",
+        "moon.fill",
+        "briefcase.fill",
+        "figure.run",
+        "fork.knife"
+    ]
+
+    let iconColumns = [
+        GridItem(.flexible()),
+        GridItem(.flexible()),
+        GridItem(.flexible()),
+        GridItem(.flexible())
+    ]
+    
     // Function passed in from ContentView so this sheet can save goals.
     var saveGoals: () -> Void
     
@@ -471,6 +491,33 @@ struct AddGoalSheet: View
                     .foregroundColor(.white)
                     .cornerRadius(14)
                 
+                Text("Choose Icon")
+                    .font(.headline)
+                    .foregroundColor(.white)
+
+                LazyVGrid(columns: iconColumns, spacing: 12)
+                {
+                    ForEach(goalIcons, id: \.self)
+                    { icon in
+                        Button
+                        {
+                            selectedIcon = icon
+                        } label:
+                        {
+                            Image(systemName: icon)
+                                .font(.title2)
+                                .foregroundColor(selectedIcon == icon ? .white : themeAccent)
+                                .frame(width: 52, height: 52)
+                                .background(selectedIcon == icon ? themeAccent : themeCard)
+                                .cornerRadius(14)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .stroke(selectedIcon == icon ? themeAccent : Color.white.opacity(0.10), lineWidth: 2)
+                                )
+                        }
+                    }
+                }
+                
                 // Adds the goal if the text is not empty.
                 Button
                 {
@@ -478,9 +525,10 @@ struct AddGoalSheet: View
                     
                     if !trimmedGoal.isEmpty
                     {
-                        goals.append(Goal(title: trimmedGoal))
+                        goals.append(Goal(title: trimmedGoal, icon: selectedIcon))
                         saveGoals()
                         newGoalText = ""
+                        selectedIcon = "target"
                         dismiss()
                     }
                 } label:

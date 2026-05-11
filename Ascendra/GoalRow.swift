@@ -44,7 +44,7 @@ struct GoalRow: View
                     .fill(Color.white.opacity(0.08))
                     .frame(width: 56, height: 56)
                 
-                Image(systemName: "target")
+                Image(systemName: goal.icon)
                     .foregroundColor(themeAccent)
                     .font(.title2)
             }

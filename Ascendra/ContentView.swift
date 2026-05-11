@@ -192,27 +192,7 @@ struct ContentView: View
                             )
                         }
                     }
-                    
-                    // Preview of friend activity w/ temp data.
-                    VStack(alignment: .leading, spacing: 12)
-                    {
-                        HStack
-                        {
-                            Text("Feed Preview")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .foregroundColor(.white)
-                            
-                            Spacer()
-                            
-                            Text("View Full Feed")
-                                .foregroundColor(themeAccent)
-                        }
-                        
-                        FeedRow(name: "John", action: "checked in on", goal: "Gym", note: "Leg day done", success: true)
-                        FeedRow(name: "Sarah", action: "missed", goal: "Reading", note: nil, success: false)
-                    }
-                    
+
                     Spacer(minLength: 30)
                 }
                 .padding()

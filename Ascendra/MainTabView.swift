@@ -23,6 +23,13 @@ struct MainTabView: View
                     Text("Progress")
                 }
             
+            CircleScreen()
+                .tabItem
+                {
+                    Image(systemName: "circle.grid.2x2.fill")
+                    Text("Circle")
+                }
+            
             BadgesScreen()
                 .tabItem
                 {

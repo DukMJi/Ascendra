@@ -1,51 +1,68 @@
 import SwiftUI
 
-// One row in the feed preview.
 struct FeedRow: View
 {
-    var name: String
-    var action: String
-    var goal: String
-    var note: String?
-    var success: Bool
+    let name: String
+    let action: String
+    let goal: String
+    let note: String?
+    let success: Bool
+    
+    @AppStorage("selectedTheme") private var selectedTheme = AppTheme.core.rawValue
+    
+    var currentTheme: AppTheme
+    {
+        return AppTheme(rawValue: selectedTheme) ?? .core
+    }
+    
+    var themeCard: Color
+    {
+        return ThemeManager.card(for: currentTheme)
+    }
+    
+    var themeAccent: Color
+    {
+        return ThemeManager.accent(for: currentTheme)
+    }
+    
+    var themeSecondaryText: Color
+    {
+        return ThemeManager.secondaryText(for: currentTheme)
+    }
     
     var body: some View
     {
-        HStack(spacing: 14)
+        HStack(alignment: .top, spacing: 12)
         {
-            // Simple profile circle with the user's first initial.
-            Circle()
-                .fill(Color.white.opacity(0.12))
-                .frame(width: 48, height: 48)
-                .overlay(
-                    Text(String(name.prefix(1)))
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                )
+            ZStack
+            {
+                Circle()
+                    .fill(success ? themeAccent : Color.red.opacity(0.85))
+                    .frame(width: 42, height: 42)
+                
+                Image(systemName: success ? "checkmark" : "xmark")
+                    .foregroundColor(.white)
+                    .font(.system(size: 16, weight: .bold))
+            }
             
-            // Feed message and optional note.
             VStack(alignment: .leading, spacing: 4)
             {
                 Text("\(name) \(action) \(goal)")
+                    .fontWeight(.semibold)
                     .foregroundColor(.white)
                 
                 if let note = note
                 {
-                    Text("“\(note)”")
+                    Text(note)
                         .font(.subheadline)
-                        .foregroundColor(.secondaryText)
+                        .foregroundColor(themeSecondaryText)
                 }
             }
             
             Spacer()
-            
-            // Shows success or missed status.
-            Image(systemName: success ? "checkmark.circle.fill" : "xmark.circle.fill")
-                .foregroundColor(success ? .ascendraOrange : .gray)
-                .font(.title2)
         }
         .padding()
-        .background(Color.ascendraCard)
+        .background(themeCard)
         .cornerRadius(18)
     }
 }

@@ -3,7 +3,7 @@ import SwiftUI
 // One row in the goals list.
 struct GoalRow: View
 {
-    // Binding lets this row edit the actual goal from ContentView
+    // Binding lets this row edit the actual goal from ContentView.
     @Binding var goal: Goal
     
     var onCheckIn: () -> Void
@@ -12,11 +12,32 @@ struct GoalRow: View
     // Controls the temporary +10 XP animation.
     @State private var showXP = false
     
+    @AppStorage("selectedTheme") private var selectedTheme = AppTheme.core.rawValue
+    
+    var currentTheme: AppTheme
+    {
+        return AppTheme(rawValue: selectedTheme) ?? .core
+    }
+    
+    var themeCard: Color
+    {
+        return ThemeManager.card(for: currentTheme)
+    }
+    
+    var themeAccent: Color
+    {
+        return ThemeManager.accent(for: currentTheme)
+    }
+    
+    var themeSecondaryText: Color
+    {
+        return ThemeManager.secondaryText(for: currentTheme)
+    }
+    
     var body: some View
     {
         HStack(spacing: 14)
         {
-            // Goal icon box.
             ZStack
             {
                 RoundedRectangle(cornerRadius: 14)
@@ -24,11 +45,10 @@ struct GoalRow: View
                     .frame(width: 56, height: 56)
                 
                 Image(systemName: "target")
-                    .foregroundColor(.ascendraOrange)
+                    .foregroundColor(themeAccent)
                     .font(.title2)
             }
             
-            // Goal title and frequency label.
             VStack(alignment: .leading, spacing: 4)
             {
                 Text(goal.title)
@@ -37,28 +57,25 @@ struct GoalRow: View
                 
                 Text("Daily")
                     .font(.subheadline)
-                    .foregroundColor(.secondaryText)
+                    .foregroundColor(themeSecondaryText)
             }
             
             Spacer()
             
             ZStack
             {
-                // Shows briefly after a goal is checked.
                 if showXP
                 {
                     Text("+10 XP")
                         .font(.caption)
                         .fontWeight(.bold)
-                        .foregroundColor(.ascendraOrange)
+                        .foregroundColor(themeAccent)
                         .offset(y: -34)
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 }
                 
-                // Check-in button.
                 Button
                 {
-                    // Only allows XP once per day for this goal.
                     if !goal.isCheckedIn
                     {
                         withAnimation(.spring(response: 0.25, dampingFraction: 0.6))
@@ -70,7 +87,6 @@ struct GoalRow: View
                         
                         saveGoals()
                         
-                        // Hides the +10 XP text after delay.
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8)
                         {
                             withAnimation(.easeOut(duration: 0.3))
@@ -84,13 +100,13 @@ struct GoalRow: View
                     ZStack
                     {
                         Circle()
-                            .stroke(goal.isCheckedIn ? Color.ascendraOrange : Color.gray.opacity(0.6), lineWidth: 2.5)
+                            .stroke(goal.isCheckedIn ? themeAccent : Color.gray.opacity(0.6), lineWidth: 2.5)
                             .frame(width: 34, height: 34)
                         
                         if goal.isCheckedIn
                         {
                             Circle()
-                                .fill(Color.ascendraOrange)
+                                .fill(themeAccent)
                                 .frame(width: 34, height: 34)
                             
                             Image(systemName: "checkmark")
@@ -102,7 +118,7 @@ struct GoalRow: View
             }
         }
         .padding()
-        .background(Color.ascendraCard)
+        .background(themeCard)
         .cornerRadius(18)
     }
 }

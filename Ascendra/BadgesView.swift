@@ -3,6 +3,7 @@ import SwiftUI
 struct BadgesScreen: View
 {
     @State private var earnedBadges: [Badge] = []
+    @AppStorage("selectedTheme") private var selectedTheme = AppTheme.core.rawValue
     
     let allBadges: [Badge] = [
         Badge(title: "First Check-In", description: "Completed your first goal.", icon: "star.fill"),
@@ -10,11 +11,26 @@ struct BadgesScreen: View
         Badge(title: "3-Day Streak", description: "Stayed consistent for 3 days.", icon: "flame.fill")
     ]
     
+    var currentTheme: AppTheme
+    {
+        return AppTheme(rawValue: selectedTheme) ?? .core
+    }
+    
+    var themeBackground: Color
+    {
+        return ThemeManager.background(for: currentTheme)
+    }
+    
+    var themeSecondaryText: Color
+    {
+        return ThemeManager.secondaryText(for: currentTheme)
+    }
+    
     var body: some View
     {
         ZStack
         {
-            Color.ascendraBackground
+            themeBackground
                 .ignoresSafeArea()
             
             ScrollView
@@ -27,7 +43,7 @@ struct BadgesScreen: View
                         .foregroundColor(.white)
                     
                     Text("\(earnedBadges.count) / \(allBadges.count) unlocked")
-                        .foregroundColor(.secondaryText)
+                        .foregroundColor(themeSecondaryText)
                     
                     VStack(spacing: 12)
                     {
@@ -76,6 +92,28 @@ struct BadgeRow: View
     var badge: Badge
     var isUnlocked: Bool
     
+    @AppStorage("selectedTheme") private var selectedTheme = AppTheme.core.rawValue
+    
+    var currentTheme: AppTheme
+    {
+        return AppTheme(rawValue: selectedTheme) ?? .core
+    }
+    
+    var themeCard: Color
+    {
+        return ThemeManager.card(for: currentTheme)
+    }
+    
+    var themeAccent: Color
+    {
+        return ThemeManager.accent(for: currentTheme)
+    }
+    
+    var themeSecondaryText: Color
+    {
+        return ThemeManager.secondaryText(for: currentTheme)
+    }
+    
     var body: some View
     {
         HStack(spacing: 14)
@@ -83,11 +121,11 @@ struct BadgeRow: View
             ZStack
             {
                 Circle()
-                    .fill(isUnlocked ? Color.ascendraOrange.opacity(0.18) : Color.white.opacity(0.08))
+                    .fill(isUnlocked ? themeAccent.opacity(0.18) : Color.white.opacity(0.08))
                     .frame(width: 58, height: 58)
                 
                 Image(systemName: isUnlocked ? badge.icon : "lock.fill")
-                    .foregroundColor(isUnlocked ? .ascendraOrange : .gray)
+                    .foregroundColor(isUnlocked ? themeAccent : .gray)
                     .font(.title2)
             }
             
@@ -99,7 +137,7 @@ struct BadgeRow: View
                 
                 Text(badge.description)
                     .font(.subheadline)
-                    .foregroundColor(.secondaryText)
+                    .foregroundColor(themeSecondaryText)
             }
             
             Spacer()
@@ -107,12 +145,12 @@ struct BadgeRow: View
             if isUnlocked
             {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.ascendraOrange)
+                    .foregroundColor(themeAccent)
                     .font(.title2)
             }
         }
         .padding()
-        .background(Color.ascendraCard)
+        .background(themeCard)
         .cornerRadius(18)
         .opacity(isUnlocked ? 1.0 : 0.55)
     }

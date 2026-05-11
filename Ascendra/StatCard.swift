@@ -1,29 +1,53 @@
 import SwiftUI
 
-// Small card used for XP and streak in header.
 struct StatCard: View
 {
-    var icon: String
-    var value: String
-    var label: String
+    let icon: String
+    let value: String
+    let label: String
+    
+    @AppStorage("selectedTheme") private var selectedTheme = AppTheme.core.rawValue
+    
+    var currentTheme: AppTheme
+    {
+        return AppTheme(rawValue: selectedTheme) ?? .core
+    }
+    
+    var themeCard: Color
+    {
+        return ThemeManager.card(for: currentTheme)
+    }
+    
+    var themeAccent: Color
+    {
+        return ThemeManager.accent(for: currentTheme)
+    }
+    
+    var themeSecondaryText: Color
+    {
+        return ThemeManager.secondaryText(for: currentTheme)
+    }
     
     var body: some View
     {
-        VStack(spacing: 2)
+        HStack(spacing: 8)
         {
             Image(systemName: icon)
-                .foregroundColor(.ascendraOrange)
+                .foregroundColor(themeAccent)
             
-            Text(value)
-                .fontWeight(.bold)
-                .foregroundColor(.white)
-            
-            Text(label)
-                .font(.caption2)
-                .foregroundColor(.secondaryText)
+            VStack(alignment: .leading, spacing: 2)
+            {
+                Text(value)
+                    .font(.headline)
+                    .foregroundColor(.white)
+                
+                Text(label)
+                    .font(.caption)
+                    .foregroundColor(themeSecondaryText)
+            }
         }
-        .frame(width: 62, height: 62)
-        .background(Color.ascendraCard)
-        .cornerRadius(16)
+        .padding(10)
+        .background(themeCard)
+        .cornerRadius(14)
     }
 }

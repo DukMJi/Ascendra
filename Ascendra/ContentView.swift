@@ -53,6 +53,24 @@ struct ContentView: View
         return Double(currentLevelXP) / Double(xpNeededForNextLevel)
     }
     
+    var completedGoalsToday: Int
+    {
+        return goals.filter
+        {
+            $0.isCheckedIn
+        }.count
+    }
+
+    var dailyGoalProgress: Double
+    {
+        if goals.count == 0
+        {
+            return 0.0
+        }
+        
+        return Double(completedGoalsToday) / Double(goals.count)
+    }
+    
     // Converts saved theme string into AppTheme.
     var currentTheme: AppTheme
     {
@@ -130,80 +148,11 @@ struct ContentView: View
                     .background(themeCard)
                     .cornerRadius(20)
                     
-                    // Level progress card.
-                    VStack(alignment: .leading, spacing: 12)
-                    {
-                        HStack
-                        {
-                            Text("Level \(currentLevel)")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .foregroundColor(.white)
-                            
-                            Spacer()
-                            
-                            Text("\(currentLevelXP) / \(xpNeededForNextLevel) XP")
-                                .font(.subheadline)
-                                .foregroundColor(themeSecondaryText)
-                        }
-                        
-                        // Visual progress bar for current level.
-                        GeometryReader
-                        { geometry in
-                            ZStack(alignment: .leading)
-                            {
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(Color.white.opacity(0.10))
-                                    .frame(height: 12)
-                                
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(themeAccent)
-                                    .frame(width: geometry.size.width * levelProgress, height: 12)
-                            }
-                        }
-                        .frame(height: 12)
-                        
-                        Text("Keep checking in to unlock more rewards.")
-                            .font(.caption)
-                            .foregroundColor(themeSecondaryText)
-                    }
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(themeCard)
-                    .cornerRadius(20)
-                    
-                    // Shows the user's most recently earned badge.
-                    if let badge = recentBadge
-                    {
-                        VStack(alignment: .leading, spacing: 12)
-                        {
-                            HStack(spacing: 14)
-                            {
-                                Image(systemName: badge.icon)
-                                    .font(.largeTitle)
-                                    .foregroundColor(themeAccent)
-                                
-                                VStack(alignment: .leading, spacing: 4)
-                                {
-                                    Text("New Badge Earned")
-                                        .font(.caption)
-                                        .foregroundColor(themeSecondaryText)
-                                    
-                                    Text(badge.title)
-                                        .font(.headline)
-                                        .foregroundColor(.white)
-                                    
-                                    Text(badge.description)
-                                        .font(.subheadline)
-                                        .foregroundColor(themeSecondaryText)
-                                }
-                            }
-                        }
-                        .padding()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(themeCard)
-                        .cornerRadius(20)
-                    }
+                    DailyProgressRing(
+                        completedGoals: completedGoalsToday,
+                        totalGoals: goals.count,
+                        progress: dailyGoalProgress
+                    )
                     
                     // Goals section.
                     VStack(alignment: .leading, spacing: 12)
@@ -224,7 +173,7 @@ struct ContentView: View
                             } label:
                             {
                                 Image(systemName: "plus.circle.fill")
-                                    .foregroundColor(Color.ascendraCard)
+                                    .foregroundColor(themeAccent)
                                     .font(.title2)
                             }
                         }
@@ -480,11 +429,33 @@ struct AddGoalSheet: View
     // Allows this sheet to close itself.
     @Environment(\.dismiss) var dismiss
     
+    @AppStorage("selectedTheme") private var selectedTheme = AppTheme.core.rawValue
+    
+    var currentTheme: AppTheme
+    {
+        return AppTheme(rawValue: selectedTheme) ?? .core
+    }
+    
+    var themeBackground: Color
+    {
+        return ThemeManager.background(for: currentTheme)
+    }
+    
+    var themeCard: Color
+    {
+        return ThemeManager.card(for: currentTheme)
+    }
+    
+    var themeAccent: Color
+    {
+        return ThemeManager.accent(for: currentTheme)
+    }
+    
     var body: some View
     {
         ZStack
         {
-            Color.ascendraBackground
+            themeBackground
                 .ignoresSafeArea()
             
             VStack(alignment: .leading, spacing: 20)
@@ -496,7 +467,7 @@ struct AddGoalSheet: View
                 
                 TextField("Enter goal...", text: $newGoalText)
                     .padding()
-                    .background(Color.ascendraCard)
+                    .background(themeCard)
                     .foregroundColor(.white)
                     .cornerRadius(14)
                 
@@ -519,7 +490,7 @@ struct AddGoalSheet: View
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.ascendraOrange)
+                        .background(themeAccent)
                         .cornerRadius(14)
                 }
                 
@@ -527,6 +498,120 @@ struct AddGoalSheet: View
             }
             .padding()
         }
+    }
+}
+
+struct DailyProgressRing: View
+{
+    var progressMessage: String
+    {
+        if totalGoals == 0
+        {
+            return "Add a goal to begin."
+        }
+        
+        if completedGoals == totalGoals
+        {
+            return "All goals complete."
+        }
+        
+        if completedGoals == 0
+        {
+            return "Start with one check-in."
+        }
+        
+        return "Keep the streak alive."
+    }
+    
+    var completedGoals: Int
+    var totalGoals: Int
+    var progress: Double
+    
+    @AppStorage("selectedTheme") private var selectedTheme = AppTheme.core.rawValue
+    
+    var currentTheme: AppTheme
+    {
+        return AppTheme(rawValue: selectedTheme) ?? .core
+    }
+    
+    var themeCard: Color
+    {
+        return ThemeManager.card(for: currentTheme)
+    }
+    
+    var themeAccent: Color
+    {
+        return ThemeManager.accent(for: currentTheme)
+    }
+    
+    var themeSecondaryText: Color
+    {
+        return ThemeManager.secondaryText(for: currentTheme)
+    }
+    
+    var body: some View
+    {
+        HStack(spacing: 20)
+        {
+            ZStack
+            {
+                Circle()
+                    .stroke(Color.white.opacity(0.10), lineWidth: 14)
+                    .frame(width: 110, height: 110)
+                
+                Circle()
+                    .trim(from: 0.0, to: progress)
+                    .stroke(themeAccent, style: StrokeStyle(lineWidth: 14, lineCap: .round))
+                    .frame(width: 110, height: 110)
+                    .rotationEffect(.degrees(-90))
+                    .animation(.spring(response: 0.35, dampingFraction: 0.8), value: progress)
+                
+                VStack(spacing: 2)
+                {
+                    Text("\(Int(progress * 100))%")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+
+                    Text("\(completedGoals)/\(totalGoals)")
+                        .font(.caption)
+                        .foregroundColor(themeSecondaryText)
+                }
+            }
+            
+            VStack(alignment: .leading, spacing: 6)
+            {
+                Text("Today’s Progress")
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                
+                Text("\(completedGoals) of \(totalGoals) goals checked in")
+                    .font(.subheadline)
+                    .foregroundColor(themeSecondaryText)
+                
+                Text(progressMessage)
+                    .font(.caption)
+                    .foregroundColor(themeAccent)
+
+                if completedGoals == totalGoals && totalGoals > 0
+                {
+                    Text("Daily Complete")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(themeAccent)
+                        .cornerRadius(20)
+                }
+            }
+            
+            Spacer()
+        }
+        .padding()
+        .background(themeCard)
+        .cornerRadius(20)
     }
 }
 

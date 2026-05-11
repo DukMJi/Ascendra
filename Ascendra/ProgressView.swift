@@ -4,8 +4,34 @@ struct ProgressScreen: View
 {
     @AppStorage("xp") private var xp = 120
     @AppStorage("streak") private var streak = 5
+    @AppStorage("selectedTheme") private var selectedTheme = AppTheme.core.rawValue
     
     @State private var goals: [Goal] = []
+    
+    var currentTheme: AppTheme
+    {
+        return AppTheme(rawValue: selectedTheme) ?? .core
+    }
+    
+    var themeBackground: Color
+    {
+        return ThemeManager.background(for: currentTheme)
+    }
+    
+    var themeCard: Color
+    {
+        return ThemeManager.card(for: currentTheme)
+    }
+    
+    var themeAccent: Color
+    {
+        return ThemeManager.accent(for: currentTheme)
+    }
+    
+    var themeSecondaryText: Color
+    {
+        return ThemeManager.secondaryText(for: currentTheme)
+    }
     
     var currentLevel: Int
     {
@@ -39,7 +65,7 @@ struct ProgressScreen: View
     {
         ZStack
         {
-            Color.ascendraBackground
+            themeBackground
                 .ignoresSafeArea()
             
             ScrollView
@@ -59,7 +85,7 @@ struct ProgressScreen: View
                             .foregroundColor(.white)
                         
                         Text("\(currentLevelXP) / \(xpNeededForNextLevel) XP to next level")
-                            .foregroundColor(.secondaryText)
+                            .foregroundColor(themeSecondaryText)
                         
                         GeometryReader
                         { geometry in
@@ -70,14 +96,14 @@ struct ProgressScreen: View
                                     .frame(height: 14)
                                 
                                 RoundedRectangle(cornerRadius: 10)
-                                    .fill(Color.ascendraOrange)
+                                    .fill(themeAccent)
                                     .frame(width: geometry.size.width * levelProgress, height: 14)
                             }
                         }
                         .frame(height: 14)
                     }
                     .padding()
-                    .background(Color.ascendraCard)
+                    .background(themeCard)
                     .cornerRadius(20)
                     
                     HStack(spacing: 12)
@@ -120,12 +146,34 @@ struct ProgressStatCard: View
     var value: String
     var icon: String
     
+    @AppStorage("selectedTheme") private var selectedTheme = AppTheme.core.rawValue
+    
+    var currentTheme: AppTheme
+    {
+        return AppTheme(rawValue: selectedTheme) ?? .core
+    }
+    
+    var themeCard: Color
+    {
+        return ThemeManager.card(for: currentTheme)
+    }
+    
+    var themeAccent: Color
+    {
+        return ThemeManager.accent(for: currentTheme)
+    }
+    
+    var themeSecondaryText: Color
+    {
+        return ThemeManager.secondaryText(for: currentTheme)
+    }
+    
     var body: some View
     {
         VStack(alignment: .leading, spacing: 10)
         {
             Image(systemName: icon)
-                .foregroundColor(.ascendraOrange)
+                .foregroundColor(themeAccent)
                 .font(.title2)
             
             Text(value)
@@ -135,11 +183,11 @@ struct ProgressStatCard: View
             
             Text(title)
                 .font(.caption)
-                .foregroundColor(.secondaryText)
+                .foregroundColor(themeSecondaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .background(Color.ascendraCard)
+        .background(themeCard)
         .cornerRadius(18)
     }
 }

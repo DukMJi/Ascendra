@@ -9,7 +9,6 @@ struct ProgressScreen: View
     @State private var goals: [Goal] = []
     
     // Saved check-in history.
-    // Used for weekly stats instead of showing raw recent logs.
     @State private var checkInHistory: [CheckInRecord] = []
     
     var currentTheme: AppTheme
@@ -57,15 +56,7 @@ struct ProgressScreen: View
         return Double(currentLevelXP) / Double(xpNeededForNextLevel)
     }
     
-    var completedGoalsToday: Int
-    {
-        return goals.filter
-        {
-            $0.isCheckedIn
-        }.count
-    }
-    
-    // Counts all saved check-ins from this week.
+    // Counts check-ins from current week.
     var weeklyCompletedGoals: Int
     {
         return checkInHistory.filter
@@ -74,7 +65,7 @@ struct ProgressScreen: View
         }.count
     }
     
-    // Finds the goal title that appears most often this week.
+    // Finds most completed goal this week.
     var mostConsistentGoal: String
     {
         let weeklyRecords = checkInHistory.filter
@@ -100,6 +91,114 @@ struct ProgressScreen: View
         }?.key ?? "None yet"
     }
     
+    // Creates daily counts for current week.
+    var weeklyDailyCounts: [DailyGoalCount]
+    {
+        let calendar = Calendar.current
+        let today = Date()
+        
+        guard let weekInterval = calendar.dateInterval(of: .weekOfYear, for: today)
+        else
+        {
+            return []
+        }
+        
+        var counts: [DailyGoalCount] = []
+        
+        for dayIndex in 0..<7
+        {
+            guard let dayDate = calendar.date(byAdding: .day, value: dayIndex, to: weekInterval.start)
+            else
+            {
+                continue
+            }
+            
+            let dayString = DateFormatter.shortDate.string(from: dayDate)
+            
+            let completedCount = checkInHistory.filter
+            {
+                $0.dateString == dayString
+            }.count
+            
+            let weekdayLetter = DateFormatter.weekdayLetter.string(from: dayDate)
+            
+            counts.append(
+                DailyGoalCount(
+                    dayLabel: weekdayLetter,
+                    count: completedCount,
+                    isToday: calendar.isDate(dayDate, inSameDayAs: today)
+                )
+            )
+        }
+        
+        return counts
+    }
+    
+    // Creates the last 30 days for monthly heatmap.
+    var monthlyHeatmapDays: [MonthlyHeatmapDay]
+    {
+        let calendar = Calendar.current
+        let today = Date()
+        var days: [MonthlyHeatmapDay] = []
+        
+        for offset in stride(from: 29, through: 0, by: -1)
+        {
+            guard let date = calendar.date(byAdding: .day, value: -offset, to: today)
+            else
+            {
+                continue
+            }
+            
+            let dateString = DateFormatter.shortDate.string(from: date)
+            
+            let completedCount = checkInHistory.filter
+            {
+                $0.dateString == dateString
+            }.count
+            
+            days.append(
+                MonthlyHeatmapDay(
+                    dateString: dateString,
+                    count: completedCount,
+                    isToday: calendar.isDate(date, inSameDayAs: today)
+                )
+            )
+        }
+        
+        return days
+    }
+    
+    // Counts which goals were checked in most during the current week.
+    var goalDistribution: [GoalDistributionItem]
+    {
+        let weeklyRecords = checkInHistory.filter
+        {
+            isDateStringInCurrentWeek($0.dateString)
+        }
+        
+        var counts: [String: Int] = [:]
+        var icons: [String: String] = [:]
+        
+        for record in weeklyRecords
+        {
+            counts[record.goalTitle, default: 0] += 1
+            icons[record.goalTitle] = record.goalIcon
+        }
+        
+        return counts.map
+        { title, count in
+            GoalDistributionItem(
+                title: title,
+                icon: icons[title] ?? "target",
+                count: count
+            )
+        }
+        .sorted
+        {
+            $0.count > $1.count
+        }
+    }
+    
     var body: some View
     {
         ZStack
@@ -116,15 +215,23 @@ struct ProgressScreen: View
                         .fontWeight(.bold)
                         .foregroundColor(.white)
                     
+                    // Level progress card.
                     VStack(alignment: .leading, spacing: 12)
                     {
-                        Text("Level \(currentLevel)")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                        
-                        Text("\(currentLevelXP) / \(xpNeededForNextLevel) XP to next level")
-                            .foregroundColor(themeSecondaryText)
+                        HStack
+                        {
+                            Text("Level \(currentLevel)")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                            
+                            Spacer()
+                            
+                            Text("\(xp) XP")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(themeAccent)
+                        }
                         
                         GeometryReader
                         { geometry in
@@ -140,27 +247,20 @@ struct ProgressScreen: View
                             }
                         }
                         .frame(height: 14)
+                        
+                        Text("\(currentLevelXP) / \(xpNeededForNextLevel) XP to next level")
+                            .font(.caption)
+                            .foregroundColor(themeSecondaryText)
                     }
                     .padding()
                     .background(themeCard)
                     .cornerRadius(20)
                     
-                    HStack(spacing: 12)
-                    {
-                        ProgressStatCard(title: "Total XP", value: "\(xp)", icon: "bolt.fill")
-                        ProgressStatCard(title: "Streak", value: "\(streak)", icon: "flame.fill")
-                    }
+                    WeeklyBarChartCard(dailyCounts: weeklyDailyCounts)
                     
-                    ProgressStatCard(
-                        title: "Goals Completed Today",
-                        value: "\(completedGoalsToday) / \(goals.count)",
-                        icon: "checkmark.circle.fill"
-                    )
+                    MonthlyHeatmapCard(days: monthlyHeatmapDays)
                     
-                    WeeklySummaryCard(
-                        completedThisWeek: weeklyCompletedGoals,
-                        mostConsistentGoal: mostConsistentGoal
-                    )
+                    GoalDistributionCard(items: goalDistribution)
                     
                     Spacer()
                 }
@@ -174,7 +274,6 @@ struct ProgressScreen: View
         }
     }
     
-    // Loads saved goals so this screen can count completed goals.
     func loadGoals()
     {
         if let data = UserDefaults.standard.data(forKey: "goals"),
@@ -184,7 +283,6 @@ struct ProgressScreen: View
         }
     }
     
-    // Loads saved check-in history.
     func loadCheckInHistory()
     {
         if let data = UserDefaults.standard.data(forKey: "checkInHistory"),
@@ -194,7 +292,6 @@ struct ProgressScreen: View
         }
     }
     
-    // Checks if a saved date string belongs to the current week.
     func isDateStringInCurrentWeek(_ dateString: String) -> Bool
     {
         guard let date = DateFormatter.shortDate.date(from: dateString)
@@ -203,15 +300,44 @@ struct ProgressScreen: View
             return false
         }
         
-        return Calendar.current.isDate(date, equalTo: Date(), toGranularity: .weekOfYear)
+        return Calendar.current.isDate(
+            date,
+            equalTo: Date(),
+            toGranularity: .weekOfYear
+        )
     }
 }
 
-struct ProgressStatCard: View
+// Data for weekly bar chart.
+struct DailyGoalCount: Identifiable
 {
-    var title: String
-    var value: String
-    var icon: String
+    let id = UUID()
+    let dayLabel: String
+    let count: Int
+    let isToday: Bool
+}
+
+// Data for monthly heatmap.
+struct MonthlyHeatmapDay: Identifiable
+{
+    let id = UUID()
+    let dateString: String
+    let count: Int
+    let isToday: Bool
+}
+
+// Data for goal distribution.
+struct GoalDistributionItem: Identifiable
+{
+    let id = UUID()
+    let title: String
+    let icon: String
+    let count: Int
+}
+
+struct WeeklyBarChartCard: View
+{
+    var dailyCounts: [DailyGoalCount]
     
     @AppStorage("selectedTheme") private var selectedTheme = AppTheme.core.rawValue
     
@@ -233,38 +359,59 @@ struct ProgressStatCard: View
     var themeSecondaryText: Color
     {
         return ThemeManager.secondaryText(for: currentTheme)
+    }
+    
+    var maxCount: Int
+    {
+        return max(dailyCounts.map { $0.count }.max() ?? 1, 1)
     }
     
     var body: some View
     {
-        VStack(alignment: .leading, spacing: 10)
+        VStack(alignment: .leading, spacing: 16)
         {
-            Image(systemName: icon)
-                .foregroundColor(themeAccent)
-                .font(.title2)
-            
-            Text(value)
+            Text("Weekly Momentum")
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(.white)
             
-            Text(title)
-                .font(.caption)
-                .foregroundColor(themeSecondaryText)
+            HStack(alignment: .bottom, spacing: 12)
+            {
+                ForEach(dailyCounts)
+                { day in
+                    VStack(spacing: 8)
+                    {
+                        Spacer()
+                        
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(day.isToday ? themeAccent : themeAccent.opacity(0.45))
+                            .frame(
+                                width: 24,
+                                height: CGFloat(max(day.count, 1)) / CGFloat(maxCount) * 90
+                            )
+                        
+                        Text(day.dayLabel)
+                            .font(.caption)
+                            .foregroundColor(day.isToday ? themeAccent : themeSecondaryText)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .frame(height: 130)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .background(themeCard)
-        .cornerRadius(18)
+        .cornerRadius(20)
     }
 }
 
-struct WeeklySummaryCard: View
+struct MonthlyHeatmapCard: View
 {
-    var completedThisWeek: Int
-    var mostConsistentGoal: String
+    var days: [MonthlyHeatmapDay]
     
     @AppStorage("selectedTheme") private var selectedTheme = AppTheme.core.rawValue
+    
+    let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 10)
     
     var currentTheme: AppTheme
     {
@@ -284,44 +431,147 @@ struct WeeklySummaryCard: View
     var themeSecondaryText: Color
     {
         return ThemeManager.secondaryText(for: currentTheme)
+    }
+    
+    func opacityForCount(_ count: Int) -> Double
+    {
+        if count == 0
+        {
+            return 0.12
+        }
+        else if count == 1
+        {
+            return 0.35
+        }
+        else if count == 2
+        {
+            return 0.60
+        }
+        else
+        {
+            return 1.0
+        }
     }
     
     var body: some View
     {
         VStack(alignment: .leading, spacing: 14)
         {
-            Text("This Week")
+            Text("Monthly Consistency")
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(.white)
             
-            HStack
+            LazyVGrid(columns: columns, spacing: 6)
             {
-                VStack(alignment: .leading, spacing: 4)
-                {
-                    Text("\(completedThisWeek)")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundColor(themeAccent)
-                    
-                    Text("goals completed")
-                        .font(.caption)
-                        .foregroundColor(themeSecondaryText)
-                }
-                
-                Spacer()
-                
-                VStack(alignment: .trailing, spacing: 4)
-                {
-                    Text("Most Consistent")
-                        .font(.caption)
-                        .foregroundColor(themeSecondaryText)
-                    
-                    Text(mostConsistentGoal)
-                        .font(.headline)
-                        .foregroundColor(.white)
+                ForEach(days)
+                { day in
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(themeAccent.opacity(opacityForCount(day.count)))
+                        .frame(height: 18)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 5)
+                                .stroke(day.isToday ? themeAccent : Color.clear, lineWidth: 1.5)
+                        )
                 }
             }
+        }
+        .padding()
+        .background(themeCard)
+        .cornerRadius(20)
+    }
+}
+
+struct GoalDistributionCard: View
+{
+    var items: [GoalDistributionItem]
+    
+    @AppStorage("selectedTheme") private var selectedTheme = AppTheme.core.rawValue
+    
+    var currentTheme: AppTheme
+    {
+        return AppTheme(rawValue: selectedTheme) ?? .core
+    }
+    
+    var themeCard: Color
+    {
+        return ThemeManager.card(for: currentTheme)
+    }
+    
+    var themeAccent: Color
+    {
+        return ThemeManager.accent(for: currentTheme)
+    }
+    
+    var themeSecondaryText: Color
+    {
+        return ThemeManager.secondaryText(for: currentTheme)
+    }
+    
+    var totalCount: Int
+    {
+        return max(items.map { $0.count }.reduce(0, +), 1)
+    }
+    
+    var body: some View
+    {
+        VStack(alignment: .leading, spacing: 14)
+        {
+            Text("Goal Distribution")
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(.white)
+            
+            if items.isEmpty
+            {
+                Text("Check in goals to build your distribution.")
+                    .font(.subheadline)
+                    .foregroundColor(themeSecondaryText)
+            }
+            else
+            {
+                ForEach(items.prefix(5))
+                { item in
+                    VStack(alignment: .leading, spacing: 6)
+                    {
+                        HStack
+                        {
+                            Image(systemName: item.icon)
+                                .foregroundColor(themeAccent)
+                                .frame(width: 24)
+                            
+                            Text(item.title)
+                                .foregroundColor(.white)
+                                .fontWeight(.semibold)
+                            
+                            Spacer()
+                            
+                            Text("\(Int((Double(item.count) / Double(totalCount)) * 100))%")
+                                .foregroundColor(themeSecondaryText)
+                        }
+                        
+                        GeometryReader
+                        { geometry in
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.white.opacity(0.08))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(themeAccent)
+                                        .frame(
+                                            width: geometry.size.width * (Double(item.count) / Double(totalCount))
+                                        ),
+                                    alignment: .leading
+                                )
+                        }
+                        .frame(height: 8)
+                    }
+                }
+            }
+            
+            Text("Percentages based on this week's check-ins.")
+                .font(.caption)
+                .foregroundColor(themeSecondaryText)
+            
         }
         .padding()
         .background(themeCard)

@@ -29,6 +29,8 @@ struct ContentView: View
     // Stores all earned badges.
     @State private var earnedBadges: [Badge] = []
     
+    @State private var checkInHistory: [CheckInRecord] = []
+    
     // Calculates user's current level based on total XP.
     var currentLevel: Int
     {
@@ -184,7 +186,10 @@ struct ContentView: View
                         { $goal in
                             GoalRow(
                                 goal: $goal,
-                                onCheckIn: handleGoalCheckIn,
+                                onCheckIn: {
+                                    handleGoalCheckIn()
+                                    addCheckInRecord(for: goal)
+                                },
                                 saveGoals: saveGoals,
                                 onDelete: {
                                     deleteGoal(goal)
@@ -205,6 +210,7 @@ struct ContentView: View
             loadBadges()
             resetGoalsIfNewDay()
             checkForMissedStreak()
+            loadCheckInHistory()
         }
         // Shows the add-goal sheet.
         .sheet(isPresented: $showAddGoal)
@@ -241,6 +247,37 @@ struct ContentView: View
         {
             goals = decoded
         }
+    }
+    
+    func saveCheckInHistory()
+    {
+        if let encoded = try? JSONEncoder().encode(checkInHistory)
+        {
+            UserDefaults.standard.set(encoded, forKey: "checkInHistory")
+        }
+    }
+
+    func loadCheckInHistory()
+    {
+        if let data = UserDefaults.standard.data(forKey: "checkInHistory"),
+           let decoded = try? JSONDecoder().decode([CheckInRecord].self, from: data)
+        {
+            checkInHistory = decoded
+        }
+    }
+
+    func addCheckInRecord(for goal: Goal)
+    {
+        let today = DateFormatter.shortDate.string(from: Date())
+        
+        let newRecord = CheckInRecord(
+            goalTitle: goal.title,
+            goalIcon: goal.icon,
+            dateString: today
+        )
+        
+        checkInHistory.append(newRecord)
+        saveCheckInHistory()
     }
     
     // Saves earned badges to UserDefaults as JSON data.

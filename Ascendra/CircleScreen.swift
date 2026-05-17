@@ -5,9 +5,11 @@ struct CircleScreen: View
     @AppStorage("selectedTheme") private var selectedTheme = AppTheme.core.rawValue
     @AppStorage("displayName") private var displayName = "Tommy"
     @AppStorage("profileInitial") private var profileInitial = "T"
+    @AppStorage("streak") private var currentStreak = 0
     
-    // Temporary local data.
-    // Later this would come from a backend/database.
+    // Stores saved check-in history.
+    @State private var checkInHistory: [CheckInRecord] = []
+    
     // Temporary local data.
     // Later this would come from a backend/database.
     var members: [CircleMember]
@@ -22,22 +24,31 @@ struct CircleScreen: View
             CircleMember(
                 name: "John",
                 initial: "J",
-                completedGoalsThisWeek: 18,
-                streak: 6
+                completedGoalsThisWeek: 14,
+                streak: 4
             ),
             CircleMember(
                 name: "Ari",
                 initial: "A",
-                completedGoalsThisWeek: 18,
-                streak: 6
+                completedGoalsThisWeek: 9,
+                streak: 2
             ),
             CircleMember(
                 name: displayName,
                 initial: profileInitial,
-                completedGoalsThisWeek: 7,
-                streak: 3
+                completedGoalsThisWeek: weeklyCompletedGoals,
+                streak: currentStreak
             )
         ]
+    }
+    
+    // Counts all saved check-ins from this week.
+    var weeklyCompletedGoals: Int
+    {
+        return checkInHistory.filter
+        {
+            isDateStringInCurrentWeek($0.dateString)
+        }.count
     }
     
     // Sort members by completed goals descending.
@@ -68,7 +79,6 @@ struct CircleScreen: View
     
     var body: some View
     {
-        // NavigationStack allows screen navigation.
         NavigationStack
         {
             ZStack
@@ -80,7 +90,6 @@ struct CircleScreen: View
                 {
                     VStack(alignment: .leading, spacing: 24)
                     {
-                        // Main screen title.
                         Text("Circle")
                             .font(.largeTitle)
                             .fontWeight(.bold)
@@ -90,7 +99,6 @@ struct CircleScreen: View
                             .font(.subheadline)
                             .foregroundColor(themeSecondaryText)
                         
-                        // Weekly member ranking.
                         VStack(alignment: .leading, spacing: 12)
                         {
                             HStack
@@ -107,7 +115,6 @@ struct CircleScreen: View
                                     .foregroundColor(themeSecondaryText)
                             }
                             
-                            // Displays sorted member rows.
                             ForEach(Array(sortedMembers.enumerated()), id: \.element.id)
                             { index, member in
                                 CircleMemberRow(
@@ -117,7 +124,6 @@ struct CircleScreen: View
                             }
                         }
                         
-                        // Recent lightweight accountability signals.
                         VStack(alignment: .leading, spacing: 10)
                         {
                             HStack
@@ -129,7 +135,6 @@ struct CircleScreen: View
                                 
                                 Spacer()
                                 
-                                // Opens full signals history screen.
                                 NavigationLink(destination: AllSignalsScreen())
                                 {
                                     Text("View all")
@@ -138,7 +143,6 @@ struct CircleScreen: View
                                 }
                             }
                             
-                            // Only showing 3 recent signals.
                             SignalRow(
                                 icon: "eye.fill",
                                 message: "Ari noticed your consistency."
@@ -155,7 +159,6 @@ struct CircleScreen: View
                             )
                         }
                         
-                        // Recent Circle activity feed.
                         VStack(alignment: .leading, spacing: 12)
                         {
                             HStack
@@ -167,7 +170,6 @@ struct CircleScreen: View
                                 
                                 Spacer()
                                 
-                                // Opens full activity history screen.
                                 NavigationLink(destination: AllActivityScreen())
                                 {
                                     Text("View all")
@@ -176,7 +178,6 @@ struct CircleScreen: View
                                 }
                             }
                             
-                            // Only showing 3 recent activity items.
                             FeedRow(
                                 name: "John",
                                 action: "checked in on",
@@ -208,6 +209,36 @@ struct CircleScreen: View
                 }
             }
         }
+        .onAppear
+        {
+            loadCheckInHistory()
+        }
+    }
+    
+    // Loads saved check-in history.
+    func loadCheckInHistory()
+    {
+        if let data = UserDefaults.standard.data(forKey: "checkInHistory"),
+           let decoded = try? JSONDecoder().decode([CheckInRecord].self, from: data)
+        {
+            checkInHistory = decoded
+        }
+    }
+    
+    // Checks if a saved date belongs to the current week.
+    func isDateStringInCurrentWeek(_ dateString: String) -> Bool
+    {
+        guard let date = DateFormatter.shortDate.date(from: dateString)
+        else
+        {
+            return false
+        }
+        
+        return Calendar.current.isDate(
+            date,
+            equalTo: Date(),
+            toGranularity: .weekOfYear
+        )
     }
 }
 
@@ -248,7 +279,6 @@ struct CircleMemberRow: View
     {
         HStack(spacing: 14)
         {
-            // User initial circle.
             Circle()
                 .fill(themeAccent.opacity(0.18))
                 .frame(width: 40, height: 40)
@@ -259,7 +289,6 @@ struct CircleMemberRow: View
                         .foregroundColor(themeAccent)
                 )
             
-            // Member info.
             VStack(alignment: .leading, spacing: 3)
             {
                 Text(member.name)
@@ -273,7 +302,6 @@ struct CircleMemberRow: View
             
             Spacer()
             
-            // Weekly goal count.
             Text("\(member.completedGoalsThisWeek) goals")
                 .font(.subheadline)
                 .fontWeight(.semibold)

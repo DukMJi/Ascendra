@@ -187,21 +187,47 @@ struct ContentView: View
                             }
                         }
                         
-                        // Creates one GoalRow for every goal in the goals array.
-                        // $ symbol passes binding so GoalRow can edit goal.
-                        ForEach($goals)
-                        { $goal in
-                            GoalRow(
-                                goal: $goal,
-                                onCheckIn: {
-                                    handleGoalCheckIn()
-                                    addCheckInRecord(for: goal)
-                                },
-                                saveGoals: saveGoals,
-                                onDelete: {
-                                    deleteGoal(goal)
-                                }
-                            )
+                        // Shows an empty state when no goals exist yet.
+                        if goals.isEmpty
+                        {
+                            VStack(spacing: 14)
+                            {
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 34))
+                                    .foregroundColor(themeAccent.opacity(0.8))
+                                
+                                Text("Start building momentum.")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                
+                                Text("Add your first goal to begin tracking consistency.")
+                                    .font(.subheadline)
+                                    .foregroundColor(themeSecondaryText)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 50)
+                        }
+                        else
+                        {
+                            // Creates one GoalRow for every goal in the goals array.
+                            // $ symbol passes binding so GoalRow can edit goal.
+                            ForEach($goals)
+                            { $goal in
+                                GoalRow(
+                                    goal: $goal,
+                                    onCheckIn:
+                                    {
+                                        handleGoalCheckIn()
+                                        addCheckInRecord(for: goal)
+                                    },
+                                    saveGoals: saveGoals,
+                                    onDelete:
+                                    {
+                                        deleteGoal(goal)
+                                    }
+                                )
+                            }
                         }
                     }
 

@@ -524,9 +524,23 @@ struct GoalDistributionCard: View
             
             if items.isEmpty
             {
-                Text("Check in goals to build your distribution.")
-                    .font(.subheadline)
-                    .foregroundColor(themeSecondaryText)
+                VStack(spacing: 12)
+                {
+                    Image(systemName: "chart.pie")
+                        .font(.system(size: 30))
+                        .foregroundColor(themeAccent.opacity(0.8))
+                    
+                    Text("No focus data yet.")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    
+                    Text("Check in goals this week to build your focus map.")
+                        .font(.subheadline)
+                        .foregroundColor(themeSecondaryText)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 30)
             }
             else
             {

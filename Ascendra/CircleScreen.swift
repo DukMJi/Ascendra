@@ -77,6 +77,11 @@ struct CircleScreen: View
         return ThemeManager.secondaryText(for: currentTheme)
     }
     
+    var themeAccent: Color
+    {
+        return ThemeManager.accent(for: currentTheme)
+    }
+    
     var body: some View
     {
         NavigationStack
@@ -99,6 +104,7 @@ struct CircleScreen: View
                             .font(.subheadline)
                             .foregroundColor(themeSecondaryText)
                         
+                        // Weekly ranking section.
                         VStack(alignment: .leading, spacing: 12)
                         {
                             HStack
@@ -124,6 +130,7 @@ struct CircleScreen: View
                             }
                         }
                         
+                        // Recent accountability signals.
                         VStack(alignment: .leading, spacing: 10)
                         {
                             HStack
@@ -159,6 +166,7 @@ struct CircleScreen: View
                             )
                         }
                         
+                        // Recent activity feed.
                         VStack(alignment: .leading, spacing: 12)
                         {
                             HStack
@@ -178,29 +186,52 @@ struct CircleScreen: View
                                 }
                             }
                             
-                            FeedRow(
-                                name: "John",
-                                action: "checked in on",
-                                goal: "Gym",
-                                note: "Leg day done",
-                                success: true
-                            )
-                            
-                            FeedRow(
-                                name: "Sarah",
-                                action: "checked in on",
-                                goal: "Reading",
-                                note: "Finished 10 pages",
-                                success: true
-                            )
-                            
-                            FeedRow(
-                                name: "Ari",
-                                action: "missed",
-                                goal: "Study",
-                                note: nil,
-                                success: false
-                            )
+                            if members.isEmpty
+                            {
+                                VStack(spacing: 12)
+                                {
+                                    Image(systemName: "person.2")
+                                        .font(.system(size: 30))
+                                        .foregroundColor(themeAccent.opacity(0.8))
+                                    
+                                    Text("Your Circle is empty.")
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                    
+                                    Text("Add people to start building accountability together.")
+                                        .font(.subheadline)
+                                        .foregroundColor(themeSecondaryText)
+                                        .multilineTextAlignment(.center)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 30)
+                            }
+                            else
+                            {
+                                FeedRow(
+                                    name: "John",
+                                    action: "checked in on",
+                                    goal: "Gym",
+                                    note: "Leg day done",
+                                    success: true
+                                )
+                                
+                                FeedRow(
+                                    name: "Sarah",
+                                    action: "checked in on",
+                                    goal: "Reading",
+                                    note: "Finished 10 pages",
+                                    success: true
+                                )
+                                
+                                FeedRow(
+                                    name: "Ari",
+                                    action: "missed",
+                                    goal: "Study",
+                                    note: nil,
+                                    success: false
+                                )
+                            }
                         }
                         
                         Spacer()

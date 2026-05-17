@@ -8,6 +8,7 @@ struct Goal: Identifiable, Codable
     var title: String
     var isCheckedIn: Bool = false
     var icon: String = "target"
+    var hasCompletedToday: Bool = false
     
     // Creates new goal.
     // If no id given, automatically create new UUID.

@@ -111,6 +111,13 @@ struct ContentView: View
             themeBackground
                 .ignoresSafeArea()
             
+            Color.clear
+                .contentShape(Rectangle())
+                .onTapGesture
+                {
+                    NotificationCenter.default.post(name: NSNotification.Name("CloseGoalSliders"), object: nil)
+                }
+            
             ScrollView
             {
                 VStack(alignment: .leading, spacing: 24)
@@ -202,6 +209,17 @@ struct ContentView: View
                 }
                 .padding()
             }
+            
+            .simultaneousGesture(
+                TapGesture()
+                    .onEnded
+                    {
+                        NotificationCenter.default.post(
+                            name: NSNotification.Name("CloseGoalSliders"),
+                            object: nil
+                        )
+                    }
+            )
         }
         // Runs when screen first appears.
         .onAppear
@@ -316,7 +334,11 @@ struct ContentView: View
         {
             for index in goals.indices
             {
+                // Reset visual check state.
                 goals[index].isCheckedIn = false
+                
+                // Allow rewards/check-ins again tomorrow.
+                goals[index].hasCompletedToday = false
             }
             
             lastOpenedDate = today

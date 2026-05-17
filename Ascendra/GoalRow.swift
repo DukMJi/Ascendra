@@ -13,11 +13,9 @@ struct GoalRow: View
     @State private var showEditSheet = false
     @State private var editedTitle = ""
     @State private var editedIcon = "target"
+    @State private var showDeleteConfirmation = false
     
-    // Controls custom slide movement.
     @State private var dragOffset: CGFloat = 0
-    
-    // Stores whether the row is currently revealing edit/delete.
     @State private var revealedAction: String? = nil
     
     @AppStorage("selectedTheme") private var selectedTheme = AppTheme.core.rawValue
@@ -66,7 +64,7 @@ struct GoalRow: View
     {
         ZStack
         {
-            // Background reveal layer.
+            // Background edit/delete reveal layer.
             HStack
             {
                 if dragOffset > 0 || revealedAction == "edit"
@@ -102,7 +100,7 @@ struct GoalRow: View
                 {
                     Button
                     {
-                        onDelete()
+                        showDeleteConfirmation = true
                     } label:
                     {
                         Text("Delete")
@@ -116,7 +114,7 @@ struct GoalRow: View
                 }
             }
             
-            // Foreground row layer.
+            // Foreground goal row.
             HStack(spacing: 14)
             {
                 ZStack
@@ -156,25 +154,50 @@ struct GoalRow: View
                     
                     Button
                     {
-                        if !goal.isCheckedIn
+                        // If row is slid open, close it first.
+                        if revealedAction != nil
                         {
-                            withAnimation(.spring(response: 0.25, dampingFraction: 0.6))
+                            withAnimation(.spring())
                             {
-                                goal.isCheckedIn = true
-                                onCheckIn()
-                                showXP = true
+                                dragOffset = 0
+                                revealedAction = nil
                             }
                             
-                            saveGoals()
+                            return
+                        }
+                        
+                        // Tapping checked goal visually unchecks it.
+                        if goal.isCheckedIn
+                        {
+                            goal.isCheckedIn = false
+                        }
+                        else
+                        {
+                            goal.isCheckedIn = true
                             
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8)
+                            // Award XP/history only once per day.
+                            if !goal.hasCompletedToday
                             {
-                                withAnimation(.easeOut(duration: 0.3))
+                                goal.hasCompletedToday = true
+                                
+                                withAnimation(.spring(response: 0.25, dampingFraction: 0.6))
                                 {
-                                    showXP = false
+                                    showXP = true
+                                }
+                                
+                                onCheckIn()
+                                
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8)
+                                {
+                                    withAnimation(.easeOut(duration: 0.3))
+                                    {
+                                        showXP = false
+                                    }
                                 }
                             }
                         }
+                        
+                        saveGoals()
                     } label:
                     {
                         ZStack
@@ -238,6 +261,29 @@ struct GoalRow: View
                         }
                     }
             )
+            .onTapGesture
+            {
+                if revealedAction != nil
+                {
+                    withAnimation(.spring())
+                    {
+                        dragOffset = 0
+                        revealedAction = nil
+                    }
+                }
+            }
+            
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("CloseGoalSliders")))
+            { _ in
+                if revealedAction != nil
+                {
+                    withAnimation(.spring())
+                    {
+                        dragOffset = 0
+                        revealedAction = nil
+                    }
+                }
+            }
         }
         .sheet(isPresented: $showEditSheet)
         {
@@ -308,6 +354,25 @@ struct GoalRow: View
                 }
                 .padding()
             }
+        }
+        .alert("Delete Goal?", isPresented: $showDeleteConfirmation)
+        {
+            Button("Cancel", role: .cancel)
+            {
+                withAnimation(.spring())
+                {
+                    dragOffset = 0
+                    revealedAction = nil
+                }
+            }
+            
+            Button("Delete", role: .destructive)
+            {
+                onDelete()
+            }
+        } message:
+        {
+            Text("Are you sure you want to delete \"\(goal.title)\"?")
         }
     }
 }
